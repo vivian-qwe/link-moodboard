@@ -6,6 +6,7 @@ function App() {
   const [items, setItems] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modalItem, setModalItem] = useState(null);
   const backendUrl = "http://localhost:3001";
 
   const [showModal, setShowModal] = useState(false);
@@ -19,6 +20,37 @@ function App() {
     note: "",
   });
   const [fetching, setFetching] = useState(false);
+
+  const fetchAllItems = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${backendUrl}/api/items`);
+      const allItems = await res.json();
+      setItems(allItems);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteItem = async (id) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${backendUrl}/api/items/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setItems((prev) => prev.filter((item) => item.id !== id));
+      } else {
+        console.error("Error deleting item:", res.statusText);
+      }
+    } catch (error) {
+      console.error("Error deleting item:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFormAdd = async (e) => {
     e.preventDefault();
@@ -39,7 +71,9 @@ function App() {
           note: form.note,
         }),
       });
-      const newItem = await res.json();
+      const resData = await res.json();
+      const newItem = Array.isArray(resData) ? resData[0] : resData;
+      console.log("New item added:", newItem);
       setItems((prev) => [newItem, ...prev]);
       setShowModal(false);
       setForm({
@@ -239,38 +273,99 @@ function App() {
         </button>
       </form>
       <div className="w-screen -mx-8 px-8">
+        <button
+          onClick={fetchAllItems}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          {loading ? "Loading..." : "Refresh Items"}
+        </button>
         <Masonry
           breakpointCols={breakpointColumnsObj}
           className="my-masonry-grid"
           columnClassName="my-masonry-grid_column"
         >
-          {items.map((item, index) => (
+          {items.map(
+            (item, index) =>
+              item && (
+                <div
+                  key={index}
+                  className="bg-white rounded-lg shadow p-4 break-words min-h-[100px] flex-col items-center justify-center text-lg font-medium relative group"
+                  onClick={() => setModalItem(item)}
+                >
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.title}
+                      className="mb-2 w-full h-40 object-cover rounded"
+                    />
+                  )}
+                  <button
+                    onClick={() => handleDeleteItem(item.id)}
+                    className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ zIndex: 10 }}
+                  >
+                    Delete
+                  </button>
+                  <div className="font-bold text-base mb-1">{item.title}</div>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 text-xs"
+                    title={item.url}
+                  >
+                    {item.url.length > 40
+                      ? `${item.url.slice(0, 40)}...`
+                      : item.url}
+                  </a>
+                </div>
+              )
+          )}
+        </Masonry>
+
+        {/* Modal for item details */}
+        {modalItem && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={() => setModalItem(null)}
+          >
             <div
-              key={index}
-              className="bg-white rounded-lg shadow p-4 break-words min-h-[100px] flex-col items-center justify-center text-lg font-medium"
+              className="bg-white rounded-lg max-w-lg w-full p-6 relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              {item.image && (
+              <button
+                onClick={() => setModalItem(null)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-black text-xl"
+              >
+                ×
+              </button>
+
+              {modalItem.image_url && (
                 <img
-                  src={item.image}
-                  alt={item.title}
-                  className="mb-2 w-full h-40 object-cover rounded"
+                  src={modalItem.image_url}
+                  alt={modalItem.title}
+                  className="mb-4 w-full object-cover rounded"
                 />
               )}
-              <div className="font-bold text-base mb-1">{item.title}</div>
-              <div className="text-sm text-gray-600 mb-2">
-                {item.description}
+              <h2 className="text-lg font-bold mb-2">{modalItem.title}</h2>
+              <hr className="my-2" />
+              <div className="mb-4">
+                <a
+                  href={modalItem.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 text-sm break-all"
+                >
+                  {modalItem.url}
+                </a>
               </div>
-              <a
-                href={item.source}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 text-xs"
-              >
-                {item.source}
-              </a>
+              <hr className="my-2" />
+              <div className="mb-4 p-3 bg-gray-100 rounded">
+                <p className="text-sm text-gray-700">{modalItem.description}</p>
+              </div>
             </div>
-          ))}
-        </Masonry>
+          </div>
+        )}
       </div>
     </div>
   );
