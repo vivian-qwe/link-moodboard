@@ -1,13 +1,42 @@
-import { useState } from "react";
+import { use, useState } from "react";
 import "./App.css";
 import Masonry from "react-masonry-css";
+import { useEffect } from "react";
 
 function App() {
   const [items, setItems] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalItem, setModalItem] = useState(null);
+  const [savingNoteId, setSavingNoteId] = useState(null);
   const backendUrl = "http://localhost:3001";
+
+  const handleSaveNote = async (id, note) => {
+    if (!id) return;
+    try {
+      setSavingNoteId(id);
+      const res = await fetch(`${backendUrl}/api/items/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ note }),
+      });
+      if (!res.ok) throw new Error("Failed to save note");
+
+      //update local items
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, note } : item))
+      );
+      if (modalItem && modalItem.id === id) {
+        setModalItem((m) => (m ? { ...m, note } : m));
+      }
+    } catch (error) {
+      console.error("Error saving note:", error);
+    } finally {
+      setSavingNoteId(null);
+    }
+  };
 
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
@@ -155,123 +184,12 @@ function App() {
     500: 1,
   };
 
+  useEffect(() => {
+    fetchAllItems();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col p-8">
-      {showModal && (
-        <div className="fixed inset-0 bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow w-full max-w-md">
-            <form onSubmit={handleFormAdd}>
-              <div className="mb-2">
-                <label>Link</label>
-                <div className="flex gap-2">
-                  <input
-                    value={form.url}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, url: e.target.value }))
-                    }
-                    className="border px-2 py-1 flex-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleFetch}
-                    disabled={fetching || !form.url}
-                    className="bg-blue-500 text-white px-3 py-1 rounded"
-                  >
-                    {fetching ? "Fetching..." : "Fetch"}
-                  </button>
-                </div>
-              </div>
-              <div className="mb-2">
-                <label>Title</label>
-                <input
-                  value={form.title}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, title: e.target.value }))
-                  }
-                  className="border px-2 py-1 w-full"
-                />
-              </div>
-              <div className="mb-2">
-                <label>Description</label>
-                <input
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, description: e.target.value }))
-                  }
-                  className="border px-2 py-1 w-full"
-                />
-              </div>
-              <div className="mb-2">
-                <label>Image URL</label>
-                <input
-                  value={form.image_url}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, image_url: e.target.value }))
-                  }
-                  className="border px-2 py-1 w-full"
-                />
-              </div>
-              <div className="mb-2">
-                <label>Note</label>
-                <input
-                  value={form.note}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, note: e.target.value }))
-                  }
-                  className="border px-2 py-1 w-full"
-                />
-              </div>
-              <div className="mb-2">
-                <label>Type</label>
-                <input
-                  value={form.type}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, type: e.target.value }))
-                  }
-                  className="border px-2 py-1 w-full"
-                />
-              </div>
-              <div className="flex gap-2 mt-4">
-                <button
-                  type="submit"
-                  className="bg-green-500 text-white px-4 py-2 rounded"
-                  disabled={loading}
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="bg-gray-300 px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      <button onClick={() => setShowModal(true)}>Add Item</button>
-      <form
-        onSubmit={handleAdd}
-        className="flex gap-2 mb-8 w-full max-w-3xl mx-auto"
-      >
-        <input
-          className="border rounded px-3 py-2 flex-1 w-full"
-          type="text"
-          placeholder="Add..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-        />
-        <button
-          className="bg-blue-500 text-white px-6 py-2 rounded text-xl"
-          type="submit"
-          disabled={loading}
-        >
-          +
-        </button>
-      </form>
       <div className="w-screen -mx-8 px-8">
         <button
           onClick={fetchAllItems}
@@ -300,7 +218,11 @@ function App() {
                     />
                   )}
                   <button
-                    onClick={() => handleDeleteItem(item.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteItem(item.id);
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
                     className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                     style={{ zIndex: 10 }}
                   >
@@ -313,11 +235,42 @@ function App() {
                     rel="noopener noreferrer"
                     className="text-blue-500 text-xs"
                     title={item.url}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {item.url.length > 40
                       ? `${item.url.slice(0, 40)}...`
                       : item.url}
                   </a>
+
+                  <div className="mt-3 w-full">
+                    <textarea
+                      className="w-full text-sm border rounded p-2 outline-none focus:ring-2 focus:ring-blue-300"
+                      placeholder="Add a note..."
+                      value={item.note || ""}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onChange={(e) =>
+                        setItems((prev) =>
+                          prev.map((it) =>
+                            it.id === item.id
+                              ? { ...it, note: e.target.value }
+                              : it
+                          )
+                        )
+                      }
+                      rows={3}
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSaveNote(item.id, item.note);
+                      }}
+                      className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
+                      disabled={savingNoteId === item.id}
+                    >
+                      {savingNoteId === item.id ? "Saving..." : "Save"}
+                    </button>
+                  </div>
                 </div>
               )
           )}
@@ -362,6 +315,29 @@ function App() {
               <hr className="my-2" />
               <div className="mb-4 p-3 bg-gray-100 rounded">
                 <p className="text-sm text-gray-700">{modalItem.description}</p>
+              </div>
+
+              {/* Note section */}
+              <div className="mb-2">
+                <span className="block text-xs text-gray-500 mb-1">Note</span>
+                <textarea
+                  className="w-full text-sm border rounded p-2 outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="Add a note..."
+                  value={modalItem.note || ""}
+                  onChange={(e) =>
+                    setModalItem((prev) =>
+                      prev ? { ...prev, note: e.target.value } : prev
+                    )
+                  }
+                  rows={4}
+                />
+                <button
+                  onClick={() => handleSaveNote(modalItem.id, modalItem.note)}
+                  className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
+                  disabled={savingNoteId === modalItem.id}
+                >
+                  {savingNoteId === modalItem.id ? "Saving..." : "Save"}
+                </button>
               </div>
             </div>
           </div>
