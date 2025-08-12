@@ -9,6 +9,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [modalItem, setModalItem] = useState(null);
   const [savingNoteId, setSavingNoteId] = useState(null);
+  const [openNoteId, setOpenNoteId] = useState(null);
   const backendUrl = "http://localhost:3001";
 
   const handleSaveNote = async (id, note) => {
@@ -210,13 +211,16 @@ function App() {
                   className="bg-white rounded-lg shadow p-4 break-words min-h-[100px] flex-col items-center justify-center text-lg font-medium relative group"
                   onClick={() => setModalItem(item)}
                 >
-                  {item.image_url && (
+                  {/*img and overlay*/}
+                  <div className="relative mb-2 w-full">
                     <img
                       src={item.image_url}
                       alt={item.title}
-                      className="mb-2 w-full h-40 object-cover rounded"
+                      className="w-full object-cover rounded"
+                      style={{ display: "block" }}
                     />
-                  )}
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none rounded"></div>
+                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -242,34 +246,61 @@ function App() {
                       : item.url}
                   </a>
 
+                  {/* item notes */}
                   <div className="mt-3 w-full">
-                    <textarea
-                      className="w-full text-sm border rounded p-2 outline-none focus:ring-2 focus:ring-blue-300"
-                      placeholder="Add a note..."
-                      value={item.note || ""}
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onChange={(e) =>
-                        setItems((prev) =>
-                          prev.map((it) =>
-                            it.id === item.id
-                              ? { ...it, note: e.target.value }
-                              : it
-                          )
-                        )
-                      }
-                      rows={3}
-                    />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveNote(item.id, item.note);
-                      }}
-                      className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
-                      disabled={savingNoteId === item.id}
-                    >
-                      {savingNoteId === item.id ? "Saving..." : "Save"}
-                    </button>
+                    {openNoteId !== item.id ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenNoteId(item.id);
+                        }}
+                        className="bg-gray-200 text-gray-700 px-3 py-1 rounded"
+                      >
+                        Note
+                      </button>
+                    ) : (
+                      <div className="flex flex-col gap-2 ">
+                        <textarea
+                          className="w-full text-sm border rounded p-2 outline-none focus:ring-2 focus:ring-blue-300"
+                          placeholder="Add a note..."
+                          value={item.note || ""}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onChange={(e) =>
+                            setItems((prev) =>
+                              prev.map((it) =>
+                                it.id === item.id
+                                  ? { ...it, note: e.target.value }
+                                  : it
+                              )
+                            )
+                          }
+                          rows={3}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveNote(item.id, item.note);
+                            }}
+                            className="bg-blue-500 text-white px-3 py-1 rounded"
+                            disabled={savingNoteId === item.id}
+                          >
+                            {savingNoteId === item.id
+                              ? "Saving..."
+                              : "Save Note"}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenNoteId(null);
+                            }}
+                          >
+                            Close Note
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )

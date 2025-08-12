@@ -65,3 +65,19 @@ body,
   -moz-osx-font-smoothing: auto;
   font-smooth: never;
 }
+
+/* Make all text smaller and normal weight by default */
+body,
+#root,
+.my-masonry-grid,
+.my-masonry-grid_column,
+.my-masonry-grid_column > div,
+textarea,
+button,
+a,
+p,
+.note-area,
+.note-btn {
+  font-size: 0.9rem;
+  font-weight: normal;
+}
