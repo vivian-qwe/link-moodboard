@@ -44,18 +44,30 @@
   color: #888;
 }
 
+body,
+html {
+  overflow-x: hidden;
+}
+
 /* Masonry styles for react-masonry-css */
 .my-masonry-grid {
-  display: flex;
-  /* margin-left: -24px; gutter size offset */
-  width: auto;
+  display: flex !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box;
 }
 .my-masonry-grid_column {
-  padding-left: 24px;
-  background-clip: padding-box;
+  padding-left: 8px;
+  padding-right: 8px;
+  box-sizing: border-box;
+}
+.min-h-screen {
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 .my-masonry-grid_column > div {
-  margin-bottom: 24px;
+  margin-bottom: 16px; /* or any value you prefer */
 }
 
 body,
@@ -63,7 +75,6 @@ body,
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: auto;
-  font-smooth: never;
 }
 
 /* Make all text smaller and normal weight by default */

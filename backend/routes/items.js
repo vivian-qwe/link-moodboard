@@ -6,7 +6,7 @@ const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_KEY
 );
 
 //CRUD operations
@@ -15,6 +15,17 @@ const supabase = createClient(
 router.post("/", async (req, res) => {
   const { title, description, image_url, url, type, source_url, note } =
     req.body;
+
+  const { data: existing, error: findError } = await supabase
+    .from("items")
+    .select("id")
+    .eq("url", url)
+    .maybeSingle();
+
+  if (existing) {
+    return res.status(400).json({ error: "Item with this URL already exists" });
+  }
+
   console.log("Adding item:", {
     title,
     description,
@@ -36,7 +47,10 @@ router.post("/", async (req, res) => {
 
 //read all
 router.get("/", async (req, res) => {
-  const { data, error } = await supabase.from("items").select("*");
+  const { data, error } = await supabase
+    .from("items")
+    .select("*")
+    .order("created_at", { ascending: false });
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });

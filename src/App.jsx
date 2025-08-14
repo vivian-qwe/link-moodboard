@@ -5,7 +5,6 @@ import { useEffect } from "react";
 
 function App() {
   const [items, setItems] = useState([]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalItem, setModalItem] = useState(null);
   const [savingNoteId, setSavingNoteId] = useState(null);
@@ -39,18 +38,6 @@ function App() {
     }
   };
 
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    image_url: "",
-    url: "",
-    type: "link",
-    source_url: "",
-    note: "",
-  });
-  const [fetching, setFetching] = useState(false);
-
   const fetchAllItems = async () => {
     setLoading(true);
     try {
@@ -82,107 +69,12 @@ function App() {
     }
   };
 
-  const handleFormAdd = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await fetch(`${backendUrl}/api/items`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: form.url,
-          title: form.title,
-          description: form.description,
-          image_url: form.image_url,
-          type: form.type,
-          source_url: form.source_url,
-          note: form.note,
-        }),
-      });
-      const resData = await res.json();
-      const newItem = Array.isArray(resData) ? resData[0] : resData;
-      console.log("New item added:", newItem);
-      setItems((prev) => [newItem, ...prev]);
-      setShowModal(false);
-      setForm({
-        title: "",
-        description: "",
-        image_url: "",
-        url: "",
-        type: "link",
-        source_url: "",
-        note: "",
-      });
-    } catch (error) {
-      console.error("Error adding item:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFetch = async (e) => {
-    setFetching(true);
-    try {
-      const res = await fetch(
-        `${backendUrl}/api/preview?url=${encodeURIComponent(form.url)}`
-      );
-      const preview = await res.json();
-      console.log("Preview data:", preview);
-      setForm((f) => ({
-        ...f,
-        title: preview.title || "",
-        description: preview.description || "",
-        image_url: preview.image_url || "",
-        source_url: preview.source_url || "",
-        url: preview.url || "",
-      }));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setFetching(false);
-    }
-  };
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `${backendUrl}/api/preview?url=${encodeURIComponent(input.trim())}`
-      );
-      const preview = await res.json();
-
-      //save to backend
-      const saveRes = await fetch(`${backendUrl}/api/items`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...preview,
-          note: "",
-          type: "link",
-        }),
-      });
-      const savedItem = await saveRes.json();
-      setItems([savedItem, ...items]);
-    } catch (error) {
-      console.error("Error adding item:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Masonry breakpoint columns
   const breakpointColumnsObj = {
-    default: 4,
-    1100: 3,
-    700: 2,
-    500: 1,
+    default: 6,
+    1100: 6,
+    700: 4,
+    500: 2,
   };
 
   useEffect(() => {
@@ -191,7 +83,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col p-8">
-      <div className="w-screen -mx-8 px-8">
+      <div className="w-full">
         <button
           onClick={fetchAllItems}
           className="bg-blue-500 text-white px-4 py-2 rounded"
